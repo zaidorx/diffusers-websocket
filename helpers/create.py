@@ -171,10 +171,8 @@ class StableDiffusionHelper:
                     latents: Optional[torch.FloatTensor] = None,
                     output_type: Optional[str] = "pil",
                     **kwargs,'''
-                    result =self.pipe(self.prompt, num_inference_steps = self.num_steps, generator = self.generator)
-                    print(type(result)) 
-                image = result["sample"][0]
-                print(type(image))
+                    result =self.pipe(self.prompt, num_inference_steps = self.num_steps, generator = self.generator, width=self.width, height=self.height) 
+                image = result.images[0]
                 images.append(np.array(image))
                 # if len(images) > 1:
                 #     count += len(images)
