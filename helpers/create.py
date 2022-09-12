@@ -13,6 +13,8 @@ class StableDiffusionHelper:
         self.seed = seed
         self.out_dir = output_dir
         self.prompt = prompt
+        self.height = 512
+        self.width = 512
         self.params = ""
         self.img2img = img2img
         self.generator = torch.Generator("cuda").manual_seed(self.seed)
@@ -30,7 +32,7 @@ class StableDiffusionHelper:
                 torch_dtype=torch.float16,
                 use_auth_token=True
             )
-
+        
         pipe.safety_checker = self.dummy
         self.pipe = pipe.to("cuda")   
         pipe = pipe.enable_attention_slicing()
@@ -41,6 +43,7 @@ class StableDiffusionHelper:
             self.params = f"parameters: initial image: {self.init_image}, num_images: {self.num_images}, strength: {self.strength}, self.guidance_scale: {self.guidance_scale}, seed: {self.seed}"
         else:
             self.params = f"parameters: num_images: {self.num_images}, num_steps: {self.num_steps}, seed: {self.seed}"
+        self.params = f"{self.params}, width: {self.width}, height: {self.height}"
     
     def dummy(self, images, **kwargs):
         #https://www.reddit.com/r/StableDiffusion/comments/wxba44/disable_hugging_face_nsfw_filter_in_three_step/
@@ -56,7 +59,7 @@ class StableDiffusionHelper:
             grid.paste(img, box=(i%cols*w, i//cols*h))
         grid.show()
 
-    def save_images(self, imgs):
+    def save_images(self, imgs, create_folder):
         prompts_file = os.path.join(self.out_dir, "prompts.txt")
         outfolder = ''
         if os.path.exists(prompts_file):
@@ -67,10 +70,12 @@ class StableDiffusionHelper:
                     outfolder = line[0:36]
         if len(outfolder) == 0:
             outfolder = str(uuid.uuid4())
-        sample_path = os.path.join(self.out_dir, outfolder)
+        sample_path = os.path.join(self.out_dir, outfolder) if create_folder else self.out_dir
         os.makedirs(sample_path, exist_ok=True)
         print(f"saving to folder {sample_path}")
         base_count = len(os.listdir(sample_path))
+        if base_count == 0:
+            base_count = 1
         filenames = ''
         for image in imgs:
             filename = f"{base_count:05}.png"
@@ -79,15 +84,18 @@ class StableDiffusionHelper:
             base_count += 1
         filenames = filenames.rstrip(filenames[-3])
 
-        promt_text = f"{outfolder} {self.params}"
-        with open(prompts_file, "a+") as f:
-            f.write(f"{promt_text} prompt: {self.prompt}")
-            f.write("\n")
+        if create_folder:
+            promt_text = f"{outfolder} {self.params}"
+            with open(prompts_file, "a+") as f:
+                f.write(f"{promt_text} prompt: {self.prompt}")
+                f.write("\n")
 
         prompts_file = os.path.join(sample_path, "prompts.txt")
-        if os.path.exists(prompts_file):
+        if os.path.exists(prompts_file) or not create_folder:
             self.gen_params_string()
             with open(prompts_file, "a+") as f:
+                if not create_folder:
+                    f.write(self.prompt)
                 f.write(self.params)
                 f.write(f",  files: {filenames}")
                 f.write("\n")                
@@ -105,7 +113,8 @@ class StableDiffusionHelper:
         
         
 
-    def process_txt2img(self, init_image = None, prompt = '', seed =-1, num_steps=-1, output_dir='', num_images = -1, strength = 0.75, g_scale = 7.5):
+    def process_txt2img(self, init_image = None, prompt = '', seed =-1, num_steps=-1, output_dir='', num_images = -1, strength = 0.75,
+                              g_scale = 7.5, height = -1, width = -1, create_unique_folder = True):
         if self.img2img and init_image is None:
             print("Please specify initial image to process")
             return
@@ -123,6 +132,10 @@ class StableDiffusionHelper:
             self.num_images = num_images
         if len(output_dir) > 0:
                 self.out_dir = output_dir
+        if width > 0:
+            self.width = width
+        if height > 0:
+            self.height = height
         print(f"Saving to: {self.out_dir}")        
         images = []
         if self.img2img:
@@ -159,15 +172,15 @@ class StableDiffusionHelper:
                     latents: Optional[torch.FloatTensor] = None,
                     output_type: Optional[str] = "pil",
                     **kwargs,'''
-                    result =self.pipe(self.prompt, num_inference_steps = self.num_steps, generator = self.generator) 
-                image = result["sample"][0]
+                    result =self.pipe(self.prompt, num_inference_steps = self.num_steps, generator = self.generator, width=self.width, height=self.height) 
+                image = result.images[0]
                 images.append(image)
                 if len(images) > 1:
                     count += len(images)
-                    self.save_images(images)
+                    self.save_images(images, create_unique_folder)
                     images =[]                    
         if len(images) > 0:
-            self.save_images(images)
+            self.save_images(images, create_unique_folder)
             count += len(images)
         return count
         #self.show_images(images, rows=1, cols=self.num_images)

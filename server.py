@@ -32,7 +32,7 @@ def consumer(data):
         return
     result = sd.process_txt2img(prompt=data['prompt'], init_image = data['init_image'], seed=data['seed'], 
                                 strength=data['strength'], g_scale=data['g_scale'], output_dir=data['output_dir'],
-                                num_images=data['num_images'])
+                                num_images=data['num_images'], width=data['width'], height=data['height'], create_unique_folder = data['create_unique_folder'])
     if result > 1:
         response = f"{result} images created successfully"
     else:
