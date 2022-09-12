@@ -5,12 +5,14 @@ import json
 import time
 import os
 import uuid
-
+import numpy as np
+from PIL import Image
 
 def save_images(imgs, data):
     prompt = data['prompt']
     params = f"parameters: num_images: {data['num_images']}, num_steps: {data['num_steps']}, seed: {data['seed']}"
     params = f"{params}, width: {data['width']}, height: {data['height']}"
+    create_unique_folder = data['create_unique_folder']
     prompts_file = os.path.join(out_dir, "prompts.txt")
     outfolder = ''
     if os.path.exists(prompts_file):
@@ -21,12 +23,15 @@ def save_images(imgs, data):
                 outfolder = line[0:36]
     if len(outfolder) == 0:
         outfolder = str(uuid.uuid4())
-    sample_path = os.path.join(out_dir, outfolder)
+    sample_path = os.path.join(out_dir, outfolder) if create_unique_folder else out_dir
     os.makedirs(sample_path, exist_ok=True)
     print(f"saving to folder {sample_path}")
     base_count = len(os.listdir(sample_path))
     filenames = ''
-    for image in imgs:
+    json_load = json.loads(imgs)
+    images_array = np.asarray(json_load)
+    for im_item in images_array:
+        image = Image.fromarray(np.uint8(im_item)).convert('RGB')
         filename = f"{base_count:05}.png"
         filenames = f"{filenames}{filename}, "
         image.save(os.path.join(sample_path, filename))
@@ -39,8 +44,10 @@ def save_images(imgs, data):
         f.write("\n")
 
     prompts_file = os.path.join(sample_path, "prompts.txt")
-    if os.path.exists(prompts_file):
+    if os.path.exists(prompts_file) or not create_unique_folder:
         with open(prompts_file, "a+") as f:
+            if not create_unique_folder:
+                    f.write(prompt)
             f.write(params)
             f.write(f",  files: {filenames}")
             f.write("\n")                
@@ -60,17 +67,17 @@ async def test():
     async with websockets.connect('ws://192.168.0.201:8000', ping_interval=None, max_size=None) as websocket:
         loops = total_num_images // num_images_per_request 
         global seed
-        seed = random.randint(1,1000000000)
+        seed = 900886810 #random.randint(1,1000000000)
         for i in range(0,loops):
             data= {
-            "prompt" : text_prompt,
+            "prompt" : prompts[i],# text_prompt,
             "init_image" : "",
-            "seed"       : random.randint(1,1000000000),
+            "seed"       : seed, #random.randint(1,1000000000),
             "strength"   : 0.75,
             "g_scale"    : 7.5,
             "output_dir" : out_dir,
             "num_images" : num_images_per_request,
-            "width"      : 512,
+            "width"      : 1024,
             "height"     : 512,
             "create_unique_folder" : False, #Create a unique folder for each unique prompt or not,
             "num_steps" : num_steps
@@ -104,10 +111,10 @@ if __name__ == '__main__':
 		"photorealistic, highly detailed vibrant, scifi city,  beautiful sunny day, lush gardens, street level view, wide lens,   octane render, trending on artstation, 8K, HQ",
     ]
     text_prompt = "Photorealistic image of a futuristic toronto skyline, 8k"
-    out_dir = "C:/Users/zaido/Pictures/StableDiffusion/cities/19/"
+    out_dir = "C:/Users/zaido/Pictures/StableDiffusion/cities/21/"
     num_images_per_request = 1
-    total_num_images = 10#len(prompts)
+    total_num_images = len(prompts)
     seed = time.time_ns() // 1000000  #968582803
-    num_steps=50
+    num_steps=100
     random.seed(seed)
     asyncio.run(test())

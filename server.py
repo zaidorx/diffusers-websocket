@@ -46,7 +46,7 @@ def consumer(data):
         return
     result = sd.process_txt2img(prompt=data['prompt'], init_image = data['init_image'], seed=data['seed'], 
                                 strength=data['strength'], g_scale=data['g_scale'], output_dir=data['output_dir'],
-                                num_images=data['num_images'], height=data['height'], width=data['width'])
+                                num_images=data['num_images'], height=data['height'], width=data['width'], num_steps=data['num_steps'])
     response = result
 
 async def producer_handler(websocket, path):
