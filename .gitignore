@@ -1,4 +1,5 @@
 /.vscode
 /__pycache__
 model/
-/helpers/__pycache__
+helpers/__pycache__/*
+helpers/__pycache__/create.cpython-38.pyc
