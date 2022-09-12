@@ -5,6 +5,7 @@ from PIL import Image
 import uuid
 import os
 from io import BytesIO
+import numpy as np
 
 class StableDiffusionHelper:
     def __init__(self, prompt = '', img2img = False, num_images = 4, seed = 41, num_steps=50, output_dir = '.'):
@@ -20,17 +21,15 @@ class StableDiffusionHelper:
         self.generator = torch.Generator("cuda").manual_seed(self.seed)
         if img2img:
             pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
-                "CompVis/stable-diffusion-v1-4", 
+                "./model/stable-diffusion-v1-4", 
                 revision="fp16", 
-                torch_dtype=torch.float16,
-                use_auth_token=True
+                torch_dtype=torch.float16
             )
         else:
             pipe = StableDiffusionPipeline.from_pretrained(
-                "CompVis/stable-diffusion-v1-4", 
+                "./model/stable-diffusion-v1-4", 
                 revision="fp16", 
-                torch_dtype=torch.float16,
-                use_auth_token=True
+                torch_dtype=torch.float16
             )
         
         pipe.safety_checker = self.dummy
@@ -172,17 +171,19 @@ class StableDiffusionHelper:
                     latents: Optional[torch.FloatTensor] = None,
                     output_type: Optional[str] = "pil",
                     **kwargs,'''
-                    result =self.pipe(self.prompt, num_inference_steps = self.num_steps, generator = self.generator, width=self.width, height=self.height) 
-                image = result.images[0]
-                images.append(image)
-                if len(images) > 1:
-                    count += len(images)
-                    self.save_images(images, create_unique_folder)
-                    images =[]                    
-        if len(images) > 0:
-            self.save_images(images, create_unique_folder)
-            count += len(images)
-        return count
+                    result =self.pipe(self.prompt, num_inference_steps = self.num_steps, generator = self.generator)
+                    print(type(result)) 
+                image = result["sample"][0]
+                print(type(image))
+                images.append(np.array(image))
+                # if len(images) > 1:
+                #     count += len(images)
+                #     self.save_images(images)
+                #     images =[]                    
+        # if len(images) > 0:
+        #     self.save_images(images)
+        #     count += len(images)
+        return images
         #self.show_images(images, rows=1, cols=self.num_images)
 
 
