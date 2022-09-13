@@ -67,30 +67,37 @@ async def test():
     async with websockets.connect('ws://192.168.0.201:8000', ping_interval=None, max_size=None) as websocket:
         loops = total_num_images // num_images_per_request 
         global seed
-        seed = 900886810 #random.randint(1,1000000000)
+        seed = 782155765 #random.randint(1,1000000000)
+        steps = 1
         for i in range(0,loops):
             data= {
-            "prompt" : prompts[i],# text_prompt,
+            "prompt" : text_prompt,
             "init_image" : "",
-            "seed"       : seed, #random.randint(1,1000000000),
+            "seed"       : 1651457280, #random.randint(1,1000000000),
             "strength"   : 0.75,
-            "g_scale"    : 7.5,
+            "g_scale"    : 9.5,
             "output_dir" : out_dir,
             "num_images" : num_images_per_request,
-            "width"      : 1024,
-            "height"     : 512,
-            "create_unique_folder" : False, #Create a unique folder for each unique prompt or not,
-            "num_steps" : num_steps
+            "width"      : width,
+            "height"     : height,
+            "create_unique_folder" : create_unique_folder, #Create a unique folder for each unique prompt or not,
+            "num_steps" : steps
             }
             payload = json.dumps(data)
             print(f"Sending data: {payload} to websocket")
-            await websocket.send(payload)        
-            print("Waiting for result.")
-            response = await websocket.recv()
-            if len(response) > 0:
-                save_images(response, data)
-            else:
-                print('No images were generated')
+            
+            try:
+                await websocket.send(payload)            
+                print("Waiting for result.")            
+                response = await websocket.recv()
+                if len(response) > 0:
+                    save_images(response, data)
+                else:
+                    print('No images were generated')
+            except:
+                print(f'Step {steps} not valid')
+            seed +=1
+            steps+=1
 
 if __name__ == '__main__':
     prompts = [
@@ -110,11 +117,14 @@ if __name__ == '__main__':
 		"photorealistic, highly detailed vibrant, cyberpunk city,  beautiful sunny day, lush gardens, street level view, wide lens,   octane render, trending on artstation, 8K, HQ",
 		"photorealistic, highly detailed vibrant, scifi city,  beautiful sunny day, lush gardens, street level view, wide lens,   octane render, trending on artstation, 8K, HQ",
     ]
-    text_prompt = "Photorealistic image of a futuristic toronto skyline, 8k"
-    out_dir = "C:/Users/zaido/Pictures/StableDiffusion/cities/21/"
+    text_prompt = "ultra realistic, portrait, Maria, with turban and robe, realistic clothing, highly detailed, epic, painted by greg rutkowski, stars, galaxies"
+    out_dir = "C:/Users/zaido/Pictures/StableDiffusion/portrait/"
     num_images_per_request = 1
-    total_num_images = len(prompts)
+    total_num_images = 100 #len(prompts)
     seed = time.time_ns() // 1000000  #968582803
-    num_steps=100
+    num_steps=5
+    create_unique_folder = True
+    width = 512
+    height = 512
     random.seed(seed)
     asyncio.run(test())
