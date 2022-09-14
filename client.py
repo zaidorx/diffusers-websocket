@@ -11,7 +11,7 @@ from PIL import Image
 def save_images(imgs, data):
     prompt = data['prompt']
     params = f"parameters: num_images: {data['num_images']}, num_steps: {data['num_steps']}, seed: {data['seed']}"
-    params = f"{params}, width: {data['width']}, height: {data['height']}"
+    params = f"{params}, width: {data['width']}, height: {data['height']}, g_scale: {data['g_scale']}"
     create_unique_folder = data['create_unique_folder']
     prompts_file = os.path.join(out_dir, "prompts.txt")
     outfolder = ''
@@ -38,10 +38,11 @@ def save_images(imgs, data):
         base_count += 1
     filenames = filenames.rstrip(filenames[-3])
 
-    promt_text = f"{outfolder} {params}"
-    with open(prompts_file, "a+") as f:
-        f.write(f"{promt_text} prompt: {prompt}")
-        f.write("\n")
+    if create_unique_folder:
+        promt_text = f"{outfolder} {params}"
+        with open(prompts_file, "a+") as f:
+            f.write(f"{promt_text} prompt: {prompt}")
+            f.write("\n")
 
     prompts_file = os.path.join(sample_path, "prompts.txt")
     if os.path.exists(prompts_file) or not create_unique_folder:
@@ -50,7 +51,7 @@ def save_images(imgs, data):
                     f.write(prompt)
             f.write(params)
             f.write(f",  files: {filenames}")
-            f.write("\n")                
+            f.write("\n\n")                
     else:
         with open(prompts_file, "a") as f:
             f.write("diffusers:StableDiffusionPipeline:txt2img (script:create.py)\n")
@@ -60,7 +61,7 @@ def save_images(imgs, data):
             f.write("\n")
             f.write(params)
             f.write(f",  files: {filenames}")
-            f.write("\n")
+            f.write("\n\n")
         
         
 async def test():
@@ -73,15 +74,15 @@ async def test():
             data= {
             "prompt" : text_prompt,
             "init_image" : "",
-            "seed"       : 1651457280, #random.randint(1,1000000000),
+            "seed"       : 360951565, #random.randint(1,1000000000),
             "strength"   : 0.75,
-            "g_scale"    : 9.5,
+            "g_scale"    : steps,
             "output_dir" : out_dir,
             "num_images" : num_images_per_request,
             "width"      : width,
             "height"     : height,
             "create_unique_folder" : create_unique_folder, #Create a unique folder for each unique prompt or not,
-            "num_steps" : steps
+            "num_steps" : num_steps
             }
             payload = json.dumps(data)
             print(f"Sending data: {payload} to websocket")
@@ -117,13 +118,13 @@ if __name__ == '__main__':
 		"photorealistic, highly detailed vibrant, cyberpunk city,  beautiful sunny day, lush gardens, street level view, wide lens,   octane render, trending on artstation, 8K, HQ",
 		"photorealistic, highly detailed vibrant, scifi city,  beautiful sunny day, lush gardens, street level view, wide lens,   octane render, trending on artstation, 8K, HQ",
     ]
-    text_prompt = "ultra realistic, portrait, Maria, with turban and robe, realistic clothing, highly detailed, epic, painted by greg rutkowski, stars, galaxies"
-    out_dir = "C:/Users/zaido/Pictures/StableDiffusion/portrait/"
+    text_prompt = "elden ring movie portrait, photo of a huge mumakil in the movie dark crystal, 2017, dramatic light, film grain, by kim jung gi"
+    out_dir = "C:/Users/zaido/Pictures/StableDiffusion/DiscordIdeas/6/"
     num_images_per_request = 1
-    total_num_images = 100 #len(prompts)
+    total_num_images = 20 #len(prompts)
     seed = time.time_ns() // 1000000  #968582803
-    num_steps=5
-    create_unique_folder = True
+    num_steps=50
+    create_unique_folder = False
     width = 512
     height = 512
     random.seed(seed)

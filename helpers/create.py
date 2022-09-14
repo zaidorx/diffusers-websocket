@@ -18,6 +18,7 @@ class StableDiffusionHelper:
         self.width = 512
         self.params = ""
         self.img2img = img2img
+        self. guidance_scale = 7.5
         self.generator = torch.Generator("cuda").manual_seed(self.seed)
         if img2img:
             pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
@@ -113,7 +114,7 @@ class StableDiffusionHelper:
         
 
     def process_txt2img(self, init_image = None, prompt = '', seed =-1, num_steps=-1, output_dir='', num_images = -1, strength = 0.75,
-                              g_scale = 7.5, height = -1, width = -1, create_unique_folder = True):
+                              g_scale = -1 , height = -1, width = -1, create_unique_folder = True):
         if self.img2img and init_image is None:
             print("Please specify initial image to process")
             return
@@ -135,13 +136,14 @@ class StableDiffusionHelper:
             self.width = width
         if height > 0:
             self.height = height
+        if g_scale > 0:
+            self.guidance_scale = g_scale
         print(f"Saving to: {self.out_dir}")        
         images = []
         if self.img2img:
             from_image = Image.open(init_image).convert("RGB")
             from_image = from_image.resize((512, 512))       
-            self.strength = strength
-            self.guidance_scale = g_scale
+            self.strength = strength           
             self.init_image = init_image
         count = 0
         for i in range (0, self.num_images):
@@ -171,7 +173,7 @@ class StableDiffusionHelper:
                     latents: Optional[torch.FloatTensor] = None,
                     output_type: Optional[str] = "pil",
                     **kwargs,'''
-                    result =self.pipe(self.prompt, num_inference_steps = self.num_steps, generator = self.generator, width=self.width, height=self.height) 
+                    result =self.pipe(self.prompt, num_inference_steps = self.num_steps,guidance_scale=self.guidance_scale, generator = self.generator, width=self.width, height=self.height) 
                 image = result.images[0]
                 images.append(np.array(image))
                 # if len(images) > 1:
